@@ -79,8 +79,8 @@ void *thread_function(void *arg){
 /* Determinar se o numero dado eh primo*/
 /* return 1 caso seja e 0 caso contrario*/
 int is_prime(unsigned long int number){
-  int response = 1;
-  int i = 2;
+  char response = 1;
+  unsigned long int i = 2;
 
   if (number < 2) response = 0;
   
@@ -90,5 +90,5 @@ int is_prime(unsigned long int number){
     i++;
   }
   
-  return response;
+  return (int)response;
 }
