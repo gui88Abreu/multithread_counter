@@ -18,7 +18,7 @@ typedef struct {
     int thread;
     unsigned long int *numbers;
     int length_numbers;
-    int *prime_numbers_amount;
+    int prime_numbers_amount;
 }dt;
 
 /* funcao thread*/
@@ -50,7 +50,6 @@ int main() {
   for (int i = 0; i < N_THREADS; i++) {
     data[i].thread = i;
     data[i].numbers = numbers_vector;
-    data[i].prime_numbers_amount = &prime_numbers_amount;
     data[i].length_numbers = j;
     pthread_create(&(thread[i]), NULL, thread_function, &(data[i]));
   }
@@ -58,6 +57,7 @@ int main() {
   /* Espera pelo fim das N_THREADS threads que estao sendo executadas*/
   for(int i = 0; i < N_THREADS; i++){
     pthread_join(thread[i], NULL);
+    prime_numbers_amount += data[i].prime_numbers_amount;
   }
 
   printf("%d\n", prime_numbers_amount);
@@ -68,8 +68,9 @@ int main() {
 void *thread_function(void *arg){
   dt *data = (dt *)arg;
 
+  data->prime_numbers_amount = 0;
   for(int k = 0; data->thread + k < data->length_numbers; k += N_THREADS){
-    *data->prime_numbers_amount += is_prime(data->numbers[data->thread + k]);
+    data->prime_numbers_amount += is_prime(data->numbers[data->thread + k]);
   }
   
   return NULL;
