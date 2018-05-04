@@ -8,17 +8,17 @@
 #include <stdio.h>
 #include <stdlib.h> /* dinamic memory*/
 #include <pthread.h> /* threads*/
-#include <unistd.h>
 
 #define N_THREADS 4
 #define N_MAX 64
 
 /* Dados necessarios para realizar a thread*/
 typedef struct {
-    int thread;
+    pthread_mutex_t *key;
     unsigned long int *numbers;
+    int *completeds;
     int length_numbers;
-    int prime_numbers_amount;
+    int *prime_numbers_amount;
 }dt;
 
 /* funcao thread*/
@@ -29,12 +29,17 @@ int is_prime(unsigned long int );
 
 int main() {
   pthread_t thread[N_THREADS];
+  pthread_mutex_t key;
   char c;
   int j;
   dt data[N_THREADS];
 
   /* vetor que guarda os numeros lidos e variavel que contem a quantidade de numeros primos lidos*/
   unsigned long int numbers_vector[N_MAX];
+
+  /* vetor que guarda o estado de cada tarefa, ou seja, nao realizada (0) ou realizada (1)*/
+  int completeds[N_MAX];
+
   int prime_numbers_amount;
 
   /* Ler no maximo N_MAX numeros inteiros sem sinal seguidos de um \n*/
@@ -42,22 +47,24 @@ int main() {
   do{
     scanf("%li", &numbers_vector[j]);
     c = getchar();
+    completeds[j] = 0;
     j += 1;
   }while (c != '\n' && j < N_MAX);
 
   /* Contar quantos numeros primos estao armazenados no vetor prime_number de entradas em N_THREADS threads em paralelo*/
   prime_numbers_amount = 0;
   for (int i = 0; i < N_THREADS; i++) {
-    data[i].thread = i;
+    data[i].key = &key;
     data[i].numbers = numbers_vector;
     data[i].length_numbers = j;
+    data[i].completeds = completeds;
+    data[i].prime_numbers_amount = &prime_numbers_amount;
     pthread_create(&(thread[i]), NULL, thread_function, &(data[i]));
   }
 
   /* Espera pelo fim das N_THREADS threads que estao sendo executadas*/
   for(int i = 0; i < N_THREADS; i++){
     pthread_join(thread[i], NULL);
-    prime_numbers_amount += data[i].prime_numbers_amount;
   }
 
   printf("%d\n", prime_numbers_amount);
@@ -67,12 +74,32 @@ int main() {
 /* Executa os N_THREADS threads*/
 void *thread_function(void *arg){
   dt *data = (dt *)arg;
-
-  data->prime_numbers_amount = 0;
-  for(int k = 0; data->thread + k < data->length_numbers; k += N_THREADS){
-    data->prime_numbers_amount += is_prime(data->numbers[data->thread + k]);
-  }
+  int task = 0, result;
   
+  while(1){
+
+    pthread_mutex_lock(data->key);
+    while(data->completeds[task] == 1 && task < data->length_numbers){
+      task++;
+    }
+    
+    if (task >= data->length_numbers){
+      pthread_mutex_unlock(data->key);
+      break;
+    }
+
+    data->completeds[task] = 1;
+    pthread_mutex_unlock(data->key);
+
+    result = is_prime(data->numbers[task]);
+    
+    printf("task = %2d: %d\n", task, result);
+
+    pthread_mutex_lock(data->key);
+    *data->prime_numbers_amount += result;
+    pthread_mutex_unlock(data->key);
+  }
+
   return NULL;
 }
 
