@@ -14,22 +14,20 @@
 
 /* Dados necessarios para realizar a thread*/
 typedef struct {
-    pthread_mutex_t *key;
     unsigned long int *numbers;
     int *completeds;
     int length_numbers;
     int *prime_numbers_amount;
 }dt;
 
-/* funcao thread*/
-void *thread_function(void *);
+void *thread_function(void *); /* funcao thread*/
 
-/*Funcao que determina se um numero eh primo*/
-int is_prime(unsigned long int );
+int is_prime(unsigned long int ); /*Funcao que determina se um numero eh primo*/
+
+pthread_mutex_t key; /*chave utilizada para travar as threads quando for necessario*/
 
 int main() {
   pthread_t thread[N_THREADS];
-  pthread_mutex_t key;
   char c;
   int j;
   dt data[N_THREADS];
@@ -54,7 +52,6 @@ int main() {
   /* Contar quantos numeros primos estao armazenados no vetor prime_number de entradas em N_THREADS threads em paralelo*/
   prime_numbers_amount = 0;
   for (int i = 0; i < N_THREADS; i++) {
-    data[i].key = &key;
     data[i].numbers = numbers_vector;
     data[i].length_numbers = j;
     data[i].completeds = completeds;
@@ -78,26 +75,24 @@ void *thread_function(void *arg){
   
   while(1){
 
-    pthread_mutex_lock(data->key);
+    pthread_mutex_lock(&key);
     while(data->completeds[task] == 1 && task < data->length_numbers){
       task++;
     }
     
     if (task >= data->length_numbers){
-      pthread_mutex_unlock(data->key);
+      pthread_mutex_unlock(&key);
       break;
     }
 
     data->completeds[task] = 1;
-    pthread_mutex_unlock(data->key);
+    pthread_mutex_unlock(&key);
 
     result = is_prime(data->numbers[task]);
-    
-    printf("task = %2d: %d\n", task, result);
 
-    pthread_mutex_lock(data->key);
+    pthread_mutex_lock(&key);
     *data->prime_numbers_amount += result;
-    pthread_mutex_unlock(data->key);
+    pthread_mutex_unlock(&key);
   }
 
   return NULL;
