@@ -1,6 +1,6 @@
 /*
- * Esta tarefa consiste em receber um texto na entrada e contar quantos números primos existem nela
- * utilizando multithreads.
+ * Esta tarefa consiste em receber um texto na entrada e contar 
+ * quantos números primos existem nela utilizando multithreads.
  */
 
 #include <stdio.h>
@@ -12,10 +12,10 @@
 
 /* Dados necessarios para realizar a thread*/
 typedef struct {
-    unsigned long int *numbers;
-    int *completeds;
-    int length_numbers;
-    int *prime_numbers_amount;
+    unsigned long int *numbers; /* Vetor de numeros a serem analisados*/
+    int *completeds; /* Vetor de tarefas*/
+    int length_numbers; /* comprimento dos vetores*/
+    int *prime_numbers_amount; /* quantidade de numeros primos total*/
 }dt;
 
 void *thread_function(void *); /* funcao thread*/
@@ -33,12 +33,17 @@ int main() {
   /* vetor que guarda os numeros lidos e variavel que contem a quantidade de numeros primos lidos*/
   unsigned long int numbers_vector[N_MAX];
 
-  /* vetor que guarda o estado de cada tarefa, ou seja, nao realizada (0) ou realizada (1)*/
+  /** vetor que guarda o estado de cada tarefa, da forma: 
+   * tarefa[i] == 0 (nao realizada) 
+   * tarefa[i] == 1 (realizada) 
+   * para i de 0 a N_MAX
+   **/
   int completeds[N_MAX];
 
+  /* Guarda a quantidade total de numeros primos encontrados*/
   int prime_numbers_amount;
 
-  /* Ler no maximo N_MAX numeros inteiros sem sinal seguidos de um \n*/
+  /* Le no maximo N_MAX numeros inteiros sem sinal seguidos de um \n*/
   j = 0;
   do{
     scanf("%li", &numbers_vector[j]);
@@ -47,7 +52,7 @@ int main() {
     j += 1;
   }while (c != '\n' && j < N_MAX);
 
-  /* Contar quantos numeros primos estao armazenados no vetor prime_number de entradas em N_THREADS threads em paralelo*/
+  /* Conta quantos numeros primos estao armazenados no vetor prime_number de entradas em N_THREADS threads em paralelo*/
   prime_numbers_amount = 0;
   for (int i = 0; i < N_THREADS; i++) {
     data[i].numbers = numbers_vector;
@@ -73,21 +78,26 @@ void *thread_function(void *arg){
   
   while(1){
 
+    /* Primeira area critica de memoria: Encontra uma tarefa ainda nao realizada*/
     pthread_mutex_lock(&key);
     while(data->completeds[task] == 1 && task < data->length_numbers){
       task++;
     }
     
+    /* encerra thread caso nao haja mais tarefas a ser realizadas*/
     if (task >= data->length_numbers){
       pthread_mutex_unlock(&key);
       break;
     }
 
+    /* marca tarefa como realizada*/
     data->completeds[task] = 1;
     pthread_mutex_unlock(&key);
 
+    /* realiza tarefa*/
     result = is_prime(data->numbers[task]);
 
+    /* Segunda area critica de memoria: Soma o valor encontrado na funcao is_prime na quantidade total ja encontrada*/
     pthread_mutex_lock(&key);
     *data->prime_numbers_amount += result;
     pthread_mutex_unlock(&key);
