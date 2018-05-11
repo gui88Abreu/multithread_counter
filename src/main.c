@@ -76,10 +76,10 @@ void *thread_function(void *arg){
   dt *data = (dt *)arg;
   int task = 0, result;
   
+  pthread_mutex_lock(&key);
   while(1){
 
     /* Primeira area critica de memoria: Encontra uma tarefa ainda nao realizada*/
-    pthread_mutex_lock(&key);
     while(data->completeds[task] == 1 && task < data->length_numbers){
       task++;
     }
@@ -100,7 +100,6 @@ void *thread_function(void *arg){
     /* Segunda area critica de memoria: Soma o valor encontrado na funcao is_prime na quantidade total ja encontrada*/
     pthread_mutex_lock(&key);
     *data->prime_numbers_amount += result;
-    pthread_mutex_unlock(&key);
   }
 
   return NULL;
